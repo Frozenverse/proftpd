@@ -1,0 +1,30 @@
+# Makefile template for mod_auth_http
+
+CC = @CC@
+CFLAGS = @CFLAGS@ -I../../include
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@ -lcurl
+
+# Module source files
+SRCS = mod_auth_http.c
+OBJS = $(SRCS:.c=.o)
+
+# Build as shared module
+SHARED_MODULE = mod_auth_http.so
+
+all: $(SHARED_MODULE)
+
+$(SHARED_MODULE): $(OBJS)
+	$(CC) -shared -o $@ $(OBJS) $(LDFLAGS) $(LIBS)
+
+.c.o:
+	$(CC) $(CFLAGS) -fPIC -c $<
+
+clean:
+	rm -f $(OBJS) $(SHARED_MODULE)
+
+install: $(SHARED_MODULE)
+	install -m 755 $(SHARED_MODULE) $(DESTDIR)$(libexecdir)
+
+# Dependencies
+mod_auth_http.o: mod_auth_http.c mod_auth_http.h ../../include/conf.h

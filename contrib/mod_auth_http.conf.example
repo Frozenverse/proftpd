@@ -1,0 +1,94 @@
+# Example configuration for mod_auth_http
+#
+# This module allows ProFTPD to authenticate users against an HTTP/HTTPS endpoint
+
+# Load the module (if compiled as DSO)
+<IfModule mod_dso.c>
+  LoadModule mod_auth_http.c
+</IfModule>
+
+# Basic configuration - authenticate against a simple HTTP endpoint
+<IfModule mod_auth_http.c>
+  # Enable HTTP authentication
+  AuthHTTPEngine on
+
+  # URL of the authentication endpoint
+  AuthHTTPURL http://auth.example.com/authenticate
+
+  # Timeout for HTTP requests (in seconds)
+  AuthHTTPTimeout 5
+
+  # HTTP method to use (POST or GET)
+  AuthHTTPMethod POST
+
+  # Parameter names for username and password
+  AuthHTTPUserParam username
+  AuthHTTPPasswordParam password
+
+  # Expected HTTP status code for successful authentication
+  AuthHTTPSuccessCode 200
+</IfModule>
+
+# Advanced configuration with HTTPS and custom headers
+<IfModule mod_auth_http.c>
+  AuthHTTPEngine on
+  AuthHTTPURL https://api.example.com/v1/auth/login
+  AuthHTTPTimeout 10
+  AuthHTTPMethod POST
+
+  # Custom headers (e.g., API key, content type)
+  AuthHTTPHeaders "X-API-Key: your-api-key-here"
+  AuthHTTPHeaders "Content-Type: application/json"
+  AuthHTTPHeaders "Accept: application/json"
+
+  # SSL certificate verification (recommended for production)
+  AuthHTTPSSLVerify on
+
+  # Cache successful authentications for 5 minutes
+  AuthHTTPCacheTime 300
+
+  # Extract user information from JSON response
+  # Expects response like: {"user": {"uid": 1000, "gid": 1000}, "groups": ["users"]}
+  AuthHTTPUserField "user"
+  AuthHTTPGroupField "groups"
+</IfModule>
+
+# Example with multiple virtual hosts
+<VirtualHost ftp.domain1.com>
+  ServerName "Domain1 FTP Server"
+
+  <IfModule mod_auth_http.c>
+    AuthHTTPEngine on
+    AuthHTTPURL https://auth.domain1.com/ftp/authenticate
+    AuthHTTPHeaders "X-Domain: domain1"
+  </IfModule>
+</VirtualHost>
+
+<VirtualHost ftp.domain2.com>
+  ServerName "Domain2 FTP Server"
+
+  <IfModule mod_auth_http.c>
+    AuthHTTPEngine on
+    AuthHTTPURL https://auth.domain2.com/api/auth
+    AuthHTTPHeaders "X-Domain: domain2"
+  </IfModule>
+</VirtualHost>
+
+# Integration with other authentication modules
+# You can combine HTTP auth with other auth methods as fallback
+<IfModule mod_auth_http.c>
+  AuthHTTPEngine on
+  AuthHTTPURL https://primary-auth.example.com/auth
+
+  # Set authentication order - try HTTP first, then file
+  AuthOrder mod_auth_http.c mod_auth_file.c
+</IfModule>
+
+# Rate limiting configuration (requires mod_wrap or similar)
+<IfModule mod_wrap.c>
+  <IfModule mod_auth_http.c>
+    # Limit authentication attempts
+    AccessGrantMsg "Welcome %u"
+    AccessDenyMsg "Too many failed login attempts"
+  </IfModule>
+</IfModule>
